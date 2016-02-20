@@ -1,0 +1,75 @@
+<navbar></navbar>
+<div class="container">
+  <div class="row">
+    <div class="panel-group" ng-model="svrMng.activePanelModel" data-allow-multiple="false" role="tablist"
+         aria-multiselectable="true" bs-collapse>
+      <div class="panel panel-default" ng-repeat="server in svrMng.servers">
+        <div class="panel-heading" role="tab">
+          <h4 class="panel-title">
+            <a bs-collapse-toggle>{{server.name}}</a>
+          </h4>
+        </div>
+        <div class="panel-collapse" role="tabpanel" bs-collapse-target>
+          <div class="panel-body">
+
+            <div class="row"> <!-- Settings Messages -->
+              <div class="col-sm-12 col-xs-12">
+                <button class="btn btn-primary pull-right" type="button" tooltip="Cancel edits."
+                        ng-click="svrMng.buttons[server._id].cancel.onClick()"
+                        ng-disabled="svrMng.buttons[server._id].cancel.isDisabled()">
+                  <i class="fa fa-ban" ></i>
+                </button>
+                <button class="btn btn-primary pull-right" type="button"
+                        ng-click="svrMng.buttons[server._id].save.onClick()"
+                        ng-disabled="svrMng.buttons[server._id].save.isDisabled()">
+                  <i class="fa fa-floppy-o"></i>
+                </button>
+                <button class="btn btn-primary pull-right" type="button"
+                        ng-click="svrMng.buttons[server._id].reset.onClick()"
+                        ng-disabled="svrMng.buttons[server._id].reset.isDisabled()">
+                  <i class="fa fa-undo"></i>
+                </button>
+                <button class="btn btn-primary pull-right" type="button"
+                        ng-click="svrMng.buttons[server._id].edit.onClick()"
+                        ng-disabled="svrMng.buttons[server._id].edit.isDisabled()">
+                  <i class="fa fa-pencil"></i>
+                </button>
+                <button class="btn btn-primary pull-right" type="button"
+                        ng-click="svrMng.buttons[server._id].stop.onClick()"
+                        ng-disabled="svrMng.buttons[server._id].stop.isDisabled()">
+                  <i class="fa fa-stop"></i>
+                </button>
+                <button class="btn btn-primary pull-right" type="button"
+                        ng-click="svrMng.buttons[server._id].restart.onClick()"
+                        ng-disabled="svrMng.buttons[server._id].restart.isDisabled()">
+                  <i class="fa fa-play"></i>
+                </button>
+              </div>
+            </div>
+            <div class="row"> <!-- properties Header-->
+              <hr>
+              <div class="col-lg-3 col-xs-1"></div>
+              <div class="col-lg-6 col-xs-11"><h4>Properties</h4></div>
+              <div class="col-lg-3 col-xs-12"></div>
+            </div> <!--/.row properties Header -->
+            <div class="row"> <!-- server.properties Body-->
+              <div ng-repeat="key in svrMng.modelKeys">
+                <div class="col-lg-4 col-sm-6">
+                  <div class="input-group">
+                    <span class="input-group-addon">{{key}}:</span>
+                    <input type="text" class="form-control" ng-model="server[key]"
+                           placeholder="Place holder..."
+                           ng-readonly="svrMng.buttons.editingId !== server._id || (svrMng.model[key].privilegeLevel && svrMng.model[key].privilegeLevel !== svrMng.userPrivilegeLevel)">
+                  </div><!--/input group-->
+                </div><!--/.col-sm-6-->
+              </div><!--/ng-repeat-->
+            </div><!--/.row MineCraft server.properties Body-->
+          </div><!--panel-body-->
+        </div><!--panel-collapse-->
+      </div><!--panel-->
+    </div><!--panel-group-->
+  </div><!--row-->
+</div><!--container-->
+
+
+<footer></footer>
