@@ -54,7 +54,7 @@
         data: initData(),
         start: {
           onClick() {
-            self.$http.put('/api/servers/' + srvrId + '/start');
+            self.$http.put('/api/servers/start/' + srvrId);
             btnSelf.data.start.disabled = true;
             btnSelf.data.stop.disabled = true;
 
@@ -68,7 +68,7 @@
         },
         stop: {
           onClick() {
-            self.$http.put('/api/servers/' + srvrId + '/stop');
+            self.$http.put('/api/servers/stop/' + srvrId);
             btnSelf.data.start.disabled = true;
             btnSelf.data.stop.disabled = true;
 
