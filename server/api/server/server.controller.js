@@ -70,10 +70,6 @@ function removeEntity(res) {
  */
 export function indexAll(req, res) {
   Server.findAsync()
-    //.then((server) => {
-    //  console.log(server)
-    //  return server;
-    //})
     .then(responseWithResult(res))
     .catch(handleError(res));
 }
@@ -85,10 +81,6 @@ export function indexAll(req, res) {
 export function index(req, res) {
   var userId = req.user._id;
   Server.findAsync({ownerId: userId})
-    //.then((server) => {
-    //  console.log(server)
-    //  return server;
-    //})
     .then(responseWithResult(res))
     .catch(handleError(res));
 }
@@ -136,9 +128,12 @@ export function start(req, res) {
   }
   Server.findAsync(query)
     .then(handleEntityNotFound(res))
-    .then((server)=>{
-      _executePm2cmd("stop " + server.svrPath + "/Ogar")
-        .then(()=>_executePm2cmd("start " + server.svrPath + "/Ogar"))
+    .then((servers)=>{
+      if (servers === []) {
+        handleEntityNotFound(res)();
+      }
+      let server = servers[0];
+      _executePm2cmd("startOrRestart " + server.svrPath + "/Ogar")
         .then(responseWithResult(res))
         .catch(handleError(res));
     })
@@ -201,10 +196,12 @@ var clean = function (message) {
   return rtn;
 };
 
+const exec = require('child_process').exec;
 var _executePm2cmd = function (cmd) {
   cmd = "pm2 " + clean(cmd);
   return new Promise(
     function (resolve, reject) {
+      console.log("exec: " + cmd);
       exec(cmd, function (err, stdout, stderr) {
         if (err) {
           console.log('pm2 error: ', err, ' msg: ', stderr);
@@ -216,7 +213,7 @@ var _executePm2cmd = function (cmd) {
   );
 };
 
-var fs = require('fs');
+const fs = require('fs');
 var writeServerToFile = function(server) {
   var text = "";
   var keys = Object.keys(ogarModel);
