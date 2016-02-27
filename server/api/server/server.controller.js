@@ -16,7 +16,9 @@ var ogarModel = require('./ogar.model.js');
 
 function handleError(res, statusCode) {
   statusCode = statusCode || 500;
+
   return function(err) {
+    console.log('error: ', err, ' status code: ', statusCode);
     res.status(statusCode).send(err);
   };
 }
@@ -105,7 +107,7 @@ export function model(req, res) {
  * restriction: 'owner'
  */
 export function show(req, res) {
-  var userId = req.params.id;
+  var userId = req.user._id;
 
   Server.findAsync({_id: req.params.id, ownerId: userId})
     .then(handleEntityNotFound(res))
@@ -128,12 +130,17 @@ export function create(req, res) {
  * restriction: 'owner'
  */
 export function start(req, res) {
-  Server.findAsync({_id: req.params.id, ownerId: userId})
+  let query = {_id: req.params.id};
+  if (req.user.role !== 'admin') {
+    query.ownerId = req.user._id;
+  }
+  Server.findAsync(query)
     .then(handleEntityNotFound(res))
     .then((server)=>{
       _executePm2cmd("stop " + server.svrPath + "/Ogar")
         .then(()=>_executePm2cmd("start " + server.svrPath + "/Ogar"))
-        .then(responseWithResult(res));
+        .then(responseWithResult(res))
+        .catch(handleError(res));
     })
     .catch(handleError(res));
 }
@@ -142,11 +149,16 @@ export function start(req, res) {
  * restriction: 'owner'
  */
 export function stop(req, res) {
-  Server.findAsync({_id: req.params.id, ownerId: userId})
+  let query = {_id: req.params.id};
+  if (req.user.role !== 'admin') {
+    query.ownerId = req.user._id;
+  }
+  Server.findAsync(query)
     .then(handleEntityNotFound(res))
     .then((server)=>{
       _executePm2cmd("stop " + server.svrPath + "/Ogar")
-        .then(responseWithResult(res));
+        .then(responseWithResult(res))
+        .catch(handleError(res));
     })
     .catch(handleError(res));
 }
@@ -195,6 +207,7 @@ var _executePm2cmd = function (cmd) {
     function (resolve, reject) {
       exec(cmd, function (err, stdout, stderr) {
         if (err) {
+          console.log('pm2 error: ', err, ' msg: ', stderr);
           reject({error: err, msg: stderr});
         }
         resolve(stdout);

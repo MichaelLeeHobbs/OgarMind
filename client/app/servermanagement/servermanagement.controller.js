@@ -54,6 +54,7 @@
         data: initData(),
         start: {
           onClick() {
+            console.log("clicked start for: ", srvrId);
             self.$http.put('/api/servers/start/' + srvrId);
             btnSelf.data.start.disabled = true;
             btnSelf.data.stop.disabled = true;
