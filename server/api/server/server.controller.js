@@ -133,7 +133,7 @@ export function start(req, res) {
         handleEntityNotFound(res)();
       }
       let server = servers[0];
-      _executePm2cmd("startOrRestart " + server.svrPath + "/Ogar/src")
+      _executePm2cmd("start " + server.svrPath + "/Ogar/src")
         .then(responseWithResult(res))
         .catch(handleError(res));
     })
