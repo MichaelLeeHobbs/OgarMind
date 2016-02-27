@@ -131,9 +131,11 @@ export function start(req, res) {
     .then((servers)=>{
       if (servers === []) {
         handleEntityNotFound(res)();
+        return;
       }
       let server = servers[0];
-      _executePm2cmd("start " + server.svrPath + "/Ogar/src")
+      let cwd = {cwd: server.svrPath + "/Ogar/src"};
+      _executePm2cmd("start " + server.svrPath + "/Ogar/src", cwd)
         .then(responseWithResult(res))
         .catch(handleError(res));
     })
@@ -151,7 +153,12 @@ export function stop(req, res) {
   Server.findAsync(query)
     .then(handleEntityNotFound(res))
     .then((server)=>{
-      _executePm2cmd("stop " + server.svrPath + "/Ogar/src")
+      if (servers === []) {
+        handleEntityNotFound(res)();
+        return;
+      }
+      let cwd = {cwd: server.svrPath + "/Ogar/src"};
+      _executePm2cmd("stop " + server.svrPath + "/Ogar/src", cwd)
         .then(responseWithResult(res))
         .catch(handleError(res));
     })
@@ -197,12 +204,12 @@ var clean = function (message) {
 };
 
 const exec = require('child_process').exec;
-var _executePm2cmd = function (cmd) {
+var _executePm2cmd = function (cmd, cwd) {
   cmd = "pm2 " + clean(cmd);
   return new Promise(
     function (resolve, reject) {
       console.log("exec: " + cmd);
-      exec(cmd, function (err, stdout, stderr) {
+      exec(cmd, cwd, function (err, stdout, stderr) {
         if (err) {
           console.log('pm2 error: ', err, ' msg: ', stderr);
           reject({error: err, msg: stderr});
@@ -215,15 +222,18 @@ var _executePm2cmd = function (cmd) {
 
 const fs = require('fs');
 var writeServerToFile = function(server) {
-  var text = "";
-  var keys = Object.keys(ogarModel);
+  let text = "";
+  let keys = Object.keys(ogarModel);
+  const newline = "\n";
+
   delete keys.name;
   delete keys.info;
   delete keys.active;
   delete keys.ownerId;
   delete keys.svrPath;
+
   keys.forEach((key)=>{
-    text += key + " = " + server[key];
+    text += key + " = " + server[key] + newline;
   });
   fs.writeFile(server['svrPath'] + "/gameserver.ini", text, (err)=>{
     if (err){
