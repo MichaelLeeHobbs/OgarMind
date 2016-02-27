@@ -1,5 +1,6 @@
 var ogarModel = {
   name: {type: String, typeof: "string", default: "An Ogar Server"},
+  status: {type: String, typeof: "string", default: "stopped"},
   info: {type: String, typeof: "string", default: "It's an Ogar Server"},
   active: {type: Boolean, typeof: "boolean", default: true, privilegeLevel: "admin"},
   ownerId: {type: String, typeof: "string", default: "", privilegeLevel: "admin"},

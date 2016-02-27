@@ -11,8 +11,11 @@
 'use strict';
 
 import _ from 'lodash';
-var Server = require('./server.model');
-var ogarModel = require('./ogar.model.js');
+const Server = require('./server.model');
+const ogarModel = require('./ogar.model.js');
+const http = require('http');
+const fs = require('fs');
+const exec = require('child_process').exec;
 
 function handleError(res, statusCode) {
   statusCode = statusCode || 500;
@@ -112,66 +115,12 @@ export function show(req, res) {
  */
 export function status(req, res) {
   let id = req.id;
-  //let url = 'http://localhost:9615';
-  let url = 'http://192.168.1.50:9615';
+  let fields = 'name status';
+  let query = (id) ? Server.findByIdAsync(id, fields) : Server.findAsync(undefined, fields);
 
-  const http = require('http');
-  http.get(url, function (httpRes) {
-    let body = '';
-
-    httpRes.on('data', (chunk)=>body += chunk);
-
-    httpRes.on('end', ()=> {
-      let response = JSON.parse(body);
-      let results = [];
-
-      response.processes.forEach((process)=> {
-        if (!id && process.name == id) {
-          results.push({id: process.name, "status": process.pm2_env.status});
-        } else {
-          results.push({id: process.name, "status": process.pm2_env.status})
-        }
-      });
-      // if we have results give them a name
-      // todo this code could give async issues will likely need to use Promise.all
-      // todo need a better long term solution for naming the server
-      let promiseCollection = [];
-      let finalResult = [];
-      console.log("preresults: ", results);
-      if (results.length > 0) {
-        results.forEach((result, index)=> {
-          promiseCollection.push(
-            Server.findAsync({_id: result.id})
-              .then((server)=> {
-                console.log(server);
-                result.name = server.name;
-                finalResult.push({
-                  name: server.name,
-                  id: result.id,
-                  status: result.status
-                });
-              })
-              .catch((err)=> {
-                // if cast error then this is not a server
-                if (err.name === 'CastError') {
-                  console.log("CastError: ", err);
-                } else {
-                  return err;
-                }
-              }));
-        });
-
-        Promise.all(promiseCollection)
-          .then(()=> {
-            console.log('results: ', finalResult);
-            responseWithResult(res)(finalResult)
-
-          })
-      } else {
-        handleEntityNotFound(res)();
-      }
-    });
-  }).on('error', handleError(res));
+  query.then(handleEntityNotFound(res))
+    .then(responseWithResult(res))
+    .catch(handleError(res));
 }
 
 /**
@@ -271,7 +220,6 @@ var clean = function (message) {
   return rtn;
 };
 
-const exec = require('child_process').exec;
 var _executePm2cmd = function (cmd, cwd) {
   cmd = "pm2 " + clean(cmd);
   return new Promise(
@@ -288,8 +236,7 @@ var _executePm2cmd = function (cmd, cwd) {
   );
 };
 
-const fs = require('fs');
-var writeServerToFile = function (server) {
+let writeServerToFile = function (server) {
   let text = "";
   let keys = Object.keys(ogarModel);
   const newline = "\n";
@@ -311,3 +258,26 @@ var writeServerToFile = function (server) {
   })
 };
 
+let getStatusUpdate = function status() {
+  //let url = 'http://localhost:9615';
+  let url = 'http://192.168.1.50:9615';
+
+  http.get(url, function (httpRes) {
+    let body = '';
+
+    httpRes
+      .on('data', (chunk)=>body += chunk)
+      .on('end', ()=> {
+        let response = JSON.parse(body);
+        response["processes"].forEach((process)=> {
+          Server.findByIdAndUpdateAsync(process.name, {status: process["pm2_env"]["status"]})
+            .catch((err)=> {
+              if (err.name !== "CastError") {
+                throw err;
+              }
+            });
+        });
+      });
+  }).on('error', (err)=>console.error(err));
+};
+let peroidicStatusUpdate = setInterval(getStatusUpdate.bind(this), 5000);
