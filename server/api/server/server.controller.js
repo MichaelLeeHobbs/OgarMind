@@ -235,11 +235,11 @@ var writeServerToFile = function(server) {
   keys.forEach((key)=>{
     text += key + " = " + server[key] + newline;
   });
-  fs.writeFile(server['svrPath'] + "/gameserver.ini", text, (err)=>{
+  fs.writeFile(server['svrPath'] + "Ogar/src/gameserver.ini", text, (err)=>{
     if (err){
       return console.log(err);
     }
-    console.log("wrote " + server['svrPath'] + "/gameserver.ini")
+    console.log("wrote " + server['svrPath'] + "Ogar/src/gameserver.ini")
   })
 };
 
