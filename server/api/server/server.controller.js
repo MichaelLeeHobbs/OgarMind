@@ -115,7 +115,7 @@ export function show(req, res) {
  */
 export function status(req, res) {
   let id = req.id;
-  let fields = 'name status';
+  let fields = 'name status uri serverPort';
   let query = (id) ? Server.findByIdAsync(id, fields) : Server.findAsync(undefined, fields);
 
   query.then(handleEntityNotFound(res))
