@@ -25,15 +25,11 @@
         $http.get('/api/servers').then(response => {
           this.servers = response.data;
           this.servers.forEach((server) => this.injectButtons(server._id));
-          console.log('not admin');
-          console.log(this.servers)
         }); // end $http.get('/api/servers/model').then(response => {
       } else {
         $http.get('/api/servers/listall').then(response => {
           this.servers = response.data;
           this.servers.forEach((server) => this.injectButtons(server._id));
-          console.log('admin');
-          console.log(this.servers)
         }); // end $http.get('/api/servers/model').then(response => {
       }
       $scope.$on('$destroy', function () {
@@ -53,32 +49,20 @@
       let btnSelf = this.buttons[srvrId] = {
         data: initData(),
         start: {
-          onClick() {
+          onClick: _.throttle(()=> {
             console.log("clicked start for: ", srvrId);
             self.$http.put('/api/servers/start/' + srvrId);
-            btnSelf.data.start.disabled = true;
-            btnSelf.data.stop.disabled = true;
-
-            _.delay(()=> {
-              btnSelf.data.stop.disabled = false;
-            }, 60000);
-          },
+          }, 20000),
           isDisabled() {
-            return btnSelf.data.start.disabled;
+            return false;
           }
         },
         stop: {
-          onClick() {
+          onClick: _.throttle(()=> {
             self.$http.put('/api/servers/stop/' + srvrId);
-            btnSelf.data.start.disabled = true;
-            btnSelf.data.stop.disabled = true;
-
-            _.delay(()=> {
-              btnSelf.data.start.disabled = false;
-            }, 60000);
-          },
+          }, 20000),
           isDisabled() {
-            return btnSelf.data.stop.disabled;
+            return false;
           }
         },
         edit: {
