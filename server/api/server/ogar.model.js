@@ -6,7 +6,7 @@ var ogarModel = {
   ownerId: {type: String, typeof: "string", default: "", privilegeLevel: "admin"},
   svrPath: {type: String, typeof: "string", default: "", privilegeLevel: "admin"},
   serverMaxConnections: {type: Number, typeof: "number", default: 64, min: 1, max: 256, privilegeLevel: "admin"},
-  uri: {type: String, typeof: "string", default: "http://localhost", privilegeLevel: "admin"},
+  uri: {type: String, typeof: "string", default: "localhost", privilegeLevel: "admin"},
   serverPort: {type: Number, typeof: "number", default: 3000, min: 1, max: 65534, privilegeLevel: "admin"},
   serverGamemode: {type: Number, typeof: "number", default: 0, min: 0, max: 20},
   serverBots: {type: Number, typeof: "number", default: 0, min: 0, max: 65534},
