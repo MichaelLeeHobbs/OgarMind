@@ -17,7 +17,7 @@ var ogarModel = require('./ogar.model.js');
 function handleError(res, statusCode) {
   statusCode = statusCode || 500;
 
-  return function(err) {
+  return function (err) {
     console.log('error: ', err, ' status code: ', statusCode);
     res.status(statusCode).send(err);
   };
@@ -25,7 +25,7 @@ function handleError(res, statusCode) {
 
 function responseWithResult(res, statusCode) {
   statusCode = statusCode || 200;
-  return function(entity) {
+  return function (entity) {
     if (entity) {
       res.status(statusCode).json(entity);
     }
@@ -33,7 +33,7 @@ function responseWithResult(res, statusCode) {
 }
 
 function handleEntityNotFound(res) {
-  return function(entity) {
+  return function (entity) {
     if (!entity) {
       res.status(404).end();
       return null;
@@ -43,7 +43,7 @@ function handleEntityNotFound(res) {
 }
 
 function saveUpdates(updates) {
-  return function(entity) {
+  return function (entity) {
     var updated = _.merge(entity, updates);
     writeServerToFile(updated);
     return updated.saveAsync()
@@ -54,7 +54,7 @@ function saveUpdates(updates) {
 }
 
 function removeEntity(res) {
-  return function(entity) {
+  return function (entity) {
     if (entity) {
       return entity.removeAsync()
         .then(() => {
@@ -108,6 +108,73 @@ export function show(req, res) {
 }
 
 /**
+ * Get a status of one or all Server from pm2 web
+ */
+export function status(req, res) {
+  let id = req.id;
+  //let url = 'http://localhost:9615';
+  let url = 'http://192.168.1.50:9615';
+
+  const http = require('http');
+  http.get(url, function (httpRes) {
+    let body = '';
+
+    httpRes.on('data', (chunk)=>body += chunk);
+
+    httpRes.on('end', ()=> {
+      let response = JSON.parse(body);
+      let results = [];
+
+      response.processes.forEach((process)=> {
+        if (!id && process.name == id) {
+          results.push({id: process.name, "status": process.pm2_env.status});
+        } else {
+          results.push({id: process.name, "status": process.pm2_env.status})
+        }
+      });
+      // if we have results give them a name
+      // todo this code could give async issues will likely need to use Promise.all
+      // todo need a better long term solution for naming the server
+      let promiseCollection = [];
+      let finalResult = [];
+      console.log("preresults: ", results);
+      if (results.length > 0) {
+        results.forEach((result, index)=> {
+          promiseCollection.push(
+            Server.findAsync({_id: result.id})
+              .then((server)=> {
+                console.log(server);
+                result.name = server.name;
+                finalResult.push({
+                  name: server.name,
+                  id: result.id,
+                  status: result.status
+                });
+              })
+              .catch((err)=> {
+                // if cast error then this is not a server
+                if (err.name === 'CastError') {
+                  console.log("CastError: ", err);
+                } else {
+                  return err;
+                }
+              }));
+        });
+
+        Promise.all(promiseCollection)
+          .then(()=> {
+            console.log('results: ', finalResult);
+            responseWithResult(res)(finalResult)
+
+          })
+      } else {
+        handleEntityNotFound(res)();
+      }
+    });
+  }).on('error', handleError(res));
+}
+
+/**
  * Create a Server
  * restriction: 'admin'
  */
@@ -128,7 +195,7 @@ export function start(req, res) {
   }
   Server.findAsync(query)
     .then(handleEntityNotFound(res))
-    .then((servers)=>{
+    .then((servers)=> {
       if (servers === []) {
         handleEntityNotFound(res)();
         return;
@@ -152,7 +219,7 @@ export function stop(req, res) {
   }
   Server.findAsync(query)
     .then(handleEntityNotFound(res))
-    .then((servers)=>{
+    .then((servers)=> {
       if (servers === []) {
         handleEntityNotFound(res)();
         return;
@@ -222,7 +289,7 @@ var _executePm2cmd = function (cmd, cwd) {
 };
 
 const fs = require('fs');
-var writeServerToFile = function(server) {
+var writeServerToFile = function (server) {
   let text = "";
   let keys = Object.keys(ogarModel);
   const newline = "\n";
@@ -233,11 +300,11 @@ var writeServerToFile = function(server) {
   delete keys.ownerId;
   delete keys.svrPath;
 
-  keys.forEach((key)=>{
+  keys.forEach((key)=> {
     text += key + " = " + server[key] + newline;
   });
-  fs.writeFile(server['svrPath'] + "/Ogar/src/gameserver.ini", text, (err)=>{
-    if (err){
+  fs.writeFile(server['svrPath'] + "/Ogar/src/gameserver.ini", text, (err)=> {
+    if (err) {
       return console.log(err);
     }
     console.log("wrote " + server['svrPath'] + "/Ogar/src/gameserver.ini")

@@ -64,25 +64,25 @@ User.find({}).removeAsync()
         email: 'isaac@example.com',
         password: '-pl,_PL<'
       })
-      .then((users) => {
-        console.log('finished populating users');
-        Server.find({}).removeAsync();
-        users.forEach((user) =>{
-          if (user.name === "Isaiah") {
-            Server.create({
-              name: "Isaiah's Ogar Server",
-              ownerId: user._id,
-              serverPort: 4002,
-              svrPath: "/var/www/isaiah4002"
-            });
-          } else if (user.name === "Isaac") {
-            Server.create({
-              name: "Isaac's Ogar Server",
-              ownerId: user._id,
-              serverPort: 4001,
-              svrPath: "/var/www/isaac4001"
-            });
-          }
-        })
-      });
+      //.then((users) => {
+      //  console.log('finished populating users');
+      //  Server.find({}).removeAsync();
+      //  users.forEach((user) =>{
+      //    if (user.name === "Isaiah") {
+      //      Server.create({
+      //        name: "Isaiah's Ogar Server",
+      //        ownerId: user._id,
+      //        serverPort: 4002,
+      //        svrPath: "/var/www/isaiah4002"
+      //      });
+      //    } else if (user.name === "Isaac") {
+      //      Server.create({
+      //        name: "Isaac's Ogar Server",
+      //        ownerId: user._id,
+      //        serverPort: 4001,
+      //        svrPath: "/var/www/isaac4001"
+      //      });
+      //    }
+      //  })
+      //});
   });
