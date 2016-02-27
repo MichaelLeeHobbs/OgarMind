@@ -195,6 +195,7 @@ export function update(req, res) {
   delete req.body.serverMaxConnections;
   delete req.body.serverPort;
   delete req.body.serverStatsPort;
+  delete req.body.status;
 
   Server.findByIdAsync(req.params.id)
     .then(handleEntityNotFound(res))
