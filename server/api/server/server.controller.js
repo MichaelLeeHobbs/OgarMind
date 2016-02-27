@@ -135,7 +135,7 @@ export function start(req, res) {
       }
       let server = servers[0];
       let cwd = {cwd: server.svrPath + "/Ogar/src"};
-      _executePm2cmd("start " + server.svrPath + "/Ogar/src", cwd)
+      _executePm2cmd("start -f" + server.svrPath + "/Ogar/src", cwd)
         .then(responseWithResult(res))
         .catch(handleError(res));
     })
@@ -152,11 +152,12 @@ export function stop(req, res) {
   }
   Server.findAsync(query)
     .then(handleEntityNotFound(res))
-    .then((server)=>{
+    .then((servers)=>{
       if (servers === []) {
         handleEntityNotFound(res)();
         return;
       }
+      let server = servers[0];
       let cwd = {cwd: server.svrPath + "/Ogar/src"};
       _executePm2cmd("stop " + server.svrPath + "/Ogar/src", cwd)
         .then(responseWithResult(res))
