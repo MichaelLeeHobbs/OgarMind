@@ -135,7 +135,7 @@ export function start(req, res) {
       }
       let server = servers[0];
       let cwd = {cwd: server.svrPath + "/Ogar/src"};
-      _executePm2cmd("start -f" + server.svrPath + "/Ogar/src --name " + server._id, cwd)
+      _executePm2cmd("start -f " + server.svrPath + "/Ogar/src --name " + server._id, cwd)
         .then(responseWithResult(res))
         .catch(handleError(res));
     })
