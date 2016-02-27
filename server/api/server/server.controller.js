@@ -184,18 +184,18 @@ export function stop(req, res) {
 
 // Updates an existing Server in the DB
 export function update(req, res) {
-  var userId = req.params.id;
-
   if (req.body._id) {
     delete req.body._id;
   }
-  delete req.body.active;
-  delete req.body.ownerId;
-  delete req.body.svrPath;
-  delete req.body.serverMaxConnections;
-  delete req.body.serverPort;
-  delete req.body.serverStatsPort;
-  delete req.body.status;
+  if (req.user.role !== 'admin') {
+    delete req.body.active;
+    delete req.body.ownerId;
+    delete req.body.svrPath;
+    delete req.body.serverMaxConnections;
+    delete req.body.serverPort;
+    delete req.body.serverStatsPort;
+    delete req.body.status;
+  }
 
   Server.findByIdAsync(req.params.id)
     .then(handleEntityNotFound(res))
@@ -242,11 +242,11 @@ let writeServerToFile = function (server) {
   let keys = Object.keys(ogarModel);
   const newline = "\n";
 
-  delete keys.name;
-  delete keys.info;
-  delete keys.active;
-  delete keys.ownerId;
-  delete keys.svrPath;
+  //delete keys.name;
+  //delete keys.info;
+  //delete keys.active;
+  //delete keys.ownerId;
+  //delete keys.svrPath;
 
   keys.forEach((key)=> {
     text += key + " = " + server[key] + newline;
