@@ -133,7 +133,7 @@ export function start(req, res) {
         handleEntityNotFound(res)();
       }
       let server = servers[0];
-      _executePm2cmd("startOrRestart " + server.svrPath + "/Ogar")
+      _executePm2cmd("startOrRestart " + server.svrPath + "/Ogar/src")
         .then(responseWithResult(res))
         .catch(handleError(res));
     })
@@ -151,7 +151,7 @@ export function stop(req, res) {
   Server.findAsync(query)
     .then(handleEntityNotFound(res))
     .then((server)=>{
-      _executePm2cmd("stop " + server.svrPath + "/Ogar")
+      _executePm2cmd("stop " + server.svrPath + "/Ogar/src")
         .then(responseWithResult(res))
         .catch(handleError(res));
     })
