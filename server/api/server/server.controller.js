@@ -21,7 +21,7 @@ function handleError(res, statusCode) {
   statusCode = statusCode || 500;
 
   return function (err) {
-    console.log('error: ', err, ' status code: ', statusCode);
+    console.log('handleError: ', err, ' status code: ', statusCode);
     res.status(statusCode).send(err);
   };
 }
@@ -142,19 +142,19 @@ export function start(req, res) {
   if (req.user.role !== 'admin') {
     query.ownerId = req.user._id;
   }
-  Server.findAsync(query)
-    .then(handleEntityNotFound(res))
-    .then((servers)=> {
-      if (servers === []) {
-        handleEntityNotFound(res)();
-        return;
+  Server.findOneAsync(query)
+    //.then(handleEntityNotFound(res))
+    .then((server)=> {
+      if (!server) {
+        return handleEntityNotFound(res)();
       }
-      let server = servers[0];
       let cwd = {cwd: server.svrPath + "/Ogar/src"};
-      _executePm2cmd("restart " + server.svrPath + "/Ogar/src --name " + server._id, cwd)
-        .then(responseWithResult(res))
-        .catch(handleError(res));
+      return _executePm2cmd("restart " + server.svrPath + "/Ogar/src --name " + server._id, cwd)
+        //.then((result)=>result);
+      // todo if we let this error bubble up it crashes the server :(
+        .catch((err)=>console.error(err));
     })
+    .then(responseWithResult(res))
     .catch(handleError(res));
 }
 /**
@@ -176,9 +176,10 @@ export function stop(req, res) {
       let server = servers[0];
       let cwd = {cwd: server.svrPath + "/Ogar/src"};
       _executePm2cmd("stop " + server.svrPath + "/Ogar/src --name " + server._id, cwd)
-        .then(responseWithResult(res))
-        .catch(handleError(res));
+        // todo if we let this error bubble up it crashes the server :(
+        .catch((error)=>console.error(error));
     })
+    .then(responseWithResult(res))
     .catch(handleError(res));
 }
 
@@ -228,7 +229,6 @@ var _executePm2cmd = function (cmd, cwd) {
       console.log("exec: " + cmd);
       exec(cmd, cwd, function (err, stdout, stderr) {
         if (err) {
-          console.log('pm2 error: ', err, ' msg: ', stderr);
           reject({error: err, msg: stderr});
         }
         resolve(stdout);
@@ -242,18 +242,12 @@ let writeServerToFile = function (server) {
   let keys = Object.keys(ogarModel);
   const newline = "\n";
 
-  //delete keys.name;
-  //delete keys.info;
-  //delete keys.active;
-  //delete keys.ownerId;
-  //delete keys.svrPath;
-
   keys.forEach((key)=> {
     text += key + " = " + server[key] + newline;
   });
   fs.writeFile(server['svrPath'] + "/Ogar/src/gameserver.ini", text, (err)=> {
     if (err) {
-      return console.log(err);
+      console.log(err);
     }
     console.log("wrote " + server['svrPath'] + "/Ogar/src/gameserver.ini")
   })
