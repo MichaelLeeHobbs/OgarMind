@@ -115,6 +115,14 @@
         }
       };
     } // end injectButtons
+    createServer() {
+      console.log("test")
+      let newServer = {};
+      this.modelKeys.forEach((key)=>{
+        newServer[key] = this.model[key].default
+      });
+      this.$http.post('/api/servers', newServer);
+    }
   }
 
   angular.module('ogarMindApp')

@@ -12,10 +12,18 @@
 
 import _ from 'lodash';
 const Server = require('./server.model');
+const User = require('../user/user.model');
 const ogarModel = require('./ogar.model.js');
 const http = require('http');
 const fs = require('fs');
 const exec = require('child_process').exec;
+let adminId;
+
+User.findOneAsync({role: 'admin'})
+  .then((user)=>adminId = user._id)
+  .catch((err)=>{
+    console.error("FATAL ERROR: failed to find an adminId in server.controller.js Error: ", err);
+  });
 
 function handleError(res, statusCode) {
   statusCode = statusCode || 500;
@@ -128,6 +136,8 @@ export function status(req, res) {
  * restriction: 'admin'
  */
 export function create(req, res) {
+  console.log(req.body);
+  req.body.ownerId = adminId;
   Server.createAsync(req.body)
     .then(responseWithResult(res, 201))
     .catch(handleError(res));
@@ -238,6 +248,8 @@ var _executePm2cmd = function (cmd, cwd) {
 };
 
 let writeServerToFile = function (server) {
+  // we are accepting client input so check for empty or undefined
+  if (!server.svrPath || server.svrPath == "") return;
   let text = "";
   let keys = Object.keys(ogarModel);
   const newline = "\n";
@@ -254,7 +266,7 @@ let writeServerToFile = function (server) {
 };
 
 let getStatusUpdate = function status() {
-  //let url = 'http://localhost:9615';
+  // todo this should not be hard coded
   let url = 'http://192.168.1.50:9615';
 
   http.get(url, function (httpRes) {

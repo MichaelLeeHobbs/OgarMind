@@ -1,12 +1,20 @@
 <navbar></navbar>
-<div class="container">
+<div class="container" ng-show="svrMng.isAdmin">
+  <div class="row">
+    <button class="btn btn-primary pull-right" type="button" ng-click="svrMng.createServer()">Create Server</button>
+  </div>
+  <br>
   <div class="row">
     <div class="panel-group" ng-model="svrMng.activePanelModel" data-allow-multiple="false" role="tablist"
          aria-multiselectable="true" bs-collapse>
       <div class="panel panel-default" ng-repeat="server in svrMng.servers">
         <div class="panel-heading" role="tab">
           <h4 class="panel-title">
-            <a bs-collapse-toggle>{{server.name}}</a>   <a target="_blank" href="http://agar.io/?ip={{server.uri}}:{{server.serverPort}}">http://agar.io/?ip={{server.uri}}:{{server.serverPort}}</a>
+            <div class="row">
+              <div class="col-sm-6"><a bs-collapse-toggle>{{server.name}}</a></div>
+              <div class="col-sm-6"><a target="_blank" href="http://agar.io/?ip={{server.uri}}:{{server.serverPort}}">http://agar.io/?ip={{server.uri}}:{{server.serverPort}}</a></div>
+            </div>
+
           </h4>
         </div>
         <div class="panel-collapse" role="tabpanel" bs-collapse-target>
