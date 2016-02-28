@@ -21,19 +21,9 @@
         this.modelKeys = Object.keys(this.model);
       }); // end $http.get('/api/servers/model').then(response => {
 
-      if (!this.isAdmin) {
-        $http.get('/api/servers').then(response => {
-          this.servers = response.data;
-          this.servers.forEach((server) => this.injectButtons(server._id));
-        }); // end $http.get('/api/servers/model').then(response => {
-      } else {
-        $http.get('/api/servers/listall').then(response => {
-          this.servers = response.data;
-          this.servers.forEach((server) => this.injectButtons(server._id));
-        }); // end $http.get('/api/servers/model').then(response => {
-      }
+      this.getServers();
       $scope.$on('$destroy', function () {
-        socket.unsyncUpdates('server');
+        //socket.unsyncUpdates('server');
       });
     } // end constructor
     injectButtons(srvrId) {
@@ -87,7 +77,7 @@
             self.buttons.editingId = undefined;
           },
           isDisabled(){
-            return  self.buttons.editingId === undefined;
+            return self.buttons.editingId === undefined;
           }
         },
         save: {
@@ -102,26 +92,42 @@
         },
         reset: {
           onClick() {
-            console.log("reset");
             let server = _.find(self.servers, {'_id': srvrId});
             //this.model = response.data;
-            self.modelKeys.forEach((key)=>{
+            self.modelKeys.forEach((key)=> {
               server[key] = self.model[key].default;
             });
           },
           isDisabled() {
             return self.buttons.editingId === undefined;
           }
+        },
+        delete: {
+          onClick() {
+            self.$http.delete('/api/servers/' + srvrId)
+              .then(()=>self.servers = self.getServers());
+          },
+          isDisabled() {
+            return !self.isAdmin;
+          }
         }
       };
     } // end injectButtons
     createServer() {
-      console.log("test")
       let newServer = {};
-      this.modelKeys.forEach((key)=>{
+      this.modelKeys.forEach((key)=> {
         newServer[key] = this.model[key].default
       });
-      this.$http.post('/api/servers', newServer);
+      this.$http.post('/api/servers', newServer)
+        .then(()=>this.getServers());
+    }
+
+    getServers() {
+      let uri = (this.isAdmin) ? 'api/servers/listall' : 'api/servers';
+      this.$http.get(uri).then(response => {
+        this.servers = response.data;
+        this.servers.forEach((server) => this.injectButtons(server._id));
+      }); // end $http.get('/api/servers/model').then(response => {
     }
   }
 

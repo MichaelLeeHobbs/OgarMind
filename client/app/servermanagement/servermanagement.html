@@ -22,6 +22,10 @@
 
             <div class="row"> <!-- Settings Messages -->
               <div class="col-sm-12 col-xs-12">
+                <button class="btn btn-danger pull-right" type="button" ng-show="svrMng.isAdmin"
+                        ng-click="svrMng.buttons[server._id].delete.onClick()">
+                  <i class="fa fa-trash"></i>
+                </button>
                 <button class="btn btn-primary pull-right" type="button" tooltip="Cancel edits."
                         ng-click="svrMng.buttons[server._id].cancel.onClick()"
                         ng-disabled="svrMng.buttons[server._id].cancel.isDisabled()">
@@ -42,12 +46,12 @@
                         ng-disabled="svrMng.buttons[server._id].edit.isDisabled()">
                   <i class="fa fa-pencil"></i>
                 </button>
-                <button class="btn btn-primary pull-right" type="button"
+                <button class="btn btn-danger pull-right" type="button"
                         ng-click="svrMng.buttons[server._id].stop.onClick()"
                         ng-disabled="svrMng.buttons[server._id].stop.isDisabled()">
                   <i class="fa fa-stop"></i>
                 </button>
-                <button class="btn btn-primary pull-right" type="button"
+                <button class="btn btn-success pull-right" type="button"
                         ng-click="svrMng.buttons[server._id].start.onClick()"
                         ng-disabled="svrMng.buttons[server._id].start.isDisabled()">
                   <i class="fa fa-play"></i>
