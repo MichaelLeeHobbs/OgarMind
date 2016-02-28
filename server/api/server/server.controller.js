@@ -18,6 +18,8 @@ const http = require('http');
 const fs = require('fs');
 const exec = require('child_process').exec;
 const async = require('async');
+const rimraf = require('rimraf');
+
 let adminId;
 
 User.findOneAsync({role: 'admin'})
@@ -225,6 +227,20 @@ export function destroy(req, res) {
     .then(handleEntityNotFound(res))
     .then(removeEntity(res))
     .catch(handleError(res));
+
+  let dir = '/var/www/' + req.params.id;
+  let pm2StopCmd = "pm2 delete " + dir + "/Ogar/src --name " + req.params.id;
+  let pm2Cwd = {cwd: dir + "/Ogar/src"};
+
+  async.series([
+    (cb) => _executeCmd(pm2StopCmd, pm2Cwd, cb),
+    (cb) =>  rimraf(dir, (err)=>{
+      if (err) {
+        console.error('failed to remove folder: ' + folder, " err: ", err);
+        cb(err);
+      } else cb(null);
+    })
+  ]);
 }
 
 function writeServerToFile(server, cb) {
@@ -328,8 +344,9 @@ function _executeCmd(cmd, options, cb) {
     if (err) {
       console.error("_executeCmd err: ", err, " stderr: ", stderr);
       cb({error: err, msg: stderr});
+    } else {
+      console.log("_executeCmd stdout: ", stdout);
+      cb(null, stdout);
     }
-    console.log("_executeCmd stdout: ", stdout);
-    cb(null, stdout);
   })
 }
