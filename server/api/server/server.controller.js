@@ -17,11 +17,12 @@ const ogarModel = require('./ogar.model.js');
 const http = require('http');
 const fs = require('fs');
 const exec = require('child_process').exec;
+const async = require('async');
 let adminId;
 
 User.findOneAsync({role: 'admin'})
   .then((user)=>adminId = user._id)
-  .catch((err)=>{
+  .catch((err)=> {
     console.error("FATAL ERROR: failed to find an adminId in server.controller.js Error: ", err);
   });
 
@@ -136,9 +137,10 @@ export function status(req, res) {
  * restriction: 'admin'
  */
 export function create(req, res) {
-  console.log(req.body);
+  //console.log(req.body);
   req.body.ownerId = adminId;
   Server.createAsync(req.body)
+    .then(createServer)
     .then(responseWithResult(res, 201))
     .catch(handleError(res));
 }
@@ -158,11 +160,11 @@ export function start(req, res) {
       if (!server) {
         return handleEntityNotFound(res)();
       }
-      let cwd = {cwd: server.svrPath + "/Ogar/src"};
-      return _executePm2cmd("restart " + server.svrPath + "/Ogar/src --name " + server._id, cwd)
-        //.then((result)=>result);
-      // todo if we let this error bubble up it crashes the server :(
-        .catch((err)=>console.error(err));
+      let cwd = {cwd: "/var/www/" + server._id + "/Ogar/src"};
+      _executeCmd("pm2 restart " + server._id, cwd, (err, result)=>{
+        if (err) throw err;
+        return server;
+      })
     })
     .then(responseWithResult(res))
     .catch(handleError(res));
@@ -176,18 +178,18 @@ export function stop(req, res) {
   if (req.user.role !== 'admin') {
     query.ownerId = req.user._id;
   }
-  Server.findAsync(query)
+  Server.findOneAsync(query)
     .then(handleEntityNotFound(res))
-    .then((servers)=> {
-      if (servers === []) {
+    .then((server)=> {
+      if (!server) {
         handleEntityNotFound(res)();
         return;
       }
-      let server = servers[0];
-      let cwd = {cwd: server.svrPath + "/Ogar/src"};
-      _executePm2cmd("stop " + server.svrPath + "/Ogar/src --name " + server._id, cwd)
-        // todo if we let this error bubble up it crashes the server :(
-        .catch((error)=>console.error(error));
+      let cwd = {cwd: "/var/www/" + server._id + "/Ogar/src"};
+      _executeCmd("pm2 stop " + server._id, cwd, (err, result)=>{
+        if (err) throw err;
+        return server;
+      })
     })
     .then(responseWithResult(res))
     .catch(handleError(res));
@@ -201,7 +203,6 @@ export function update(req, res) {
   if (req.user.role !== 'admin') {
     delete req.body.active;
     delete req.body.ownerId;
-    delete req.body.svrPath;
     delete req.body.serverMaxConnections;
     delete req.body.serverPort;
     delete req.body.serverStatsPort;
@@ -226,30 +227,10 @@ export function destroy(req, res) {
     .catch(handleError(res));
 }
 
-var clean = function (message) {
-  var rtn = message.slice(0);
-  rtn = rtn.replace(';', '\\;');
-  return rtn;
-};
-
-var _executePm2cmd = function (cmd, cwd) {
-  cmd = "pm2 " + clean(cmd);
-  return new Promise(
-    function (resolve, reject) {
-      console.log("exec: " + cmd);
-      exec(cmd, cwd, function (err, stdout, stderr) {
-        if (err) {
-          reject({error: err, msg: stderr});
-        }
-        resolve(stdout);
-      })
-    }
-  );
-};
-
-let writeServerToFile = function (server) {
+function writeServerToFile(server, cb) {
   // we are accepting client input so check for empty or undefined
-  if (!server.svrPath || server.svrPath == "") return;
+  let svrPath = "/var/www/" + server._id;
+  cb = (cb) ? cb : ()=> undefined;
   let text = "";
   let keys = Object.keys(ogarModel);
   const newline = "\n";
@@ -257,15 +238,18 @@ let writeServerToFile = function (server) {
   keys.forEach((key)=> {
     text += key + " = " + server[key] + newline;
   });
-  fs.writeFile(server['svrPath'] + "/Ogar/src/gameserver.ini", text, (err)=> {
+  fs.writeFile(svrPath + "/Ogar/src/gameserver.ini", text, (err)=> {
     if (err) {
-      console.log(err);
+      console.log("failed to write: ", svrPath + "/Ogar/src/gameserver.ini");
+      cb(err);
+    } else {
+      cb(null);
+      console.log("wrote: " + svrPath + "/Ogar/src/gameserver.ini")
     }
-    console.log("wrote " + server['svrPath'] + "/Ogar/src/gameserver.ini")
   })
-};
+}
 
-let getStatusUpdate = function status() {
+let getStatusUpdate = () => {
   // todo this should not be hard coded
   let url = 'http://192.168.1.50:9615';
 
@@ -288,3 +272,64 @@ let getStatusUpdate = function status() {
   }).on('error', (err)=>console.error(err));
 };
 let peroidicStatusUpdate = setInterval(getStatusUpdate.bind(this), 5000);
+
+function createServer(server) {
+  // create path on disk
+  // todo this should not be hardcoded
+  let dir = '/var/www/' + server._id;
+  let gitCmd = "git clone https://github.com/OgarProject/Ogar.git";
+  let gitCwd = {cwd: dir};
+  let pm2StartCmd = "pm2 start " + dir + "/Ogar/src --name " + server._id;
+  let pm2StopCmd = "pm2 stop " + dir + "/Ogar/src --name " + server._id;
+  let pm2Cwd = {cwd: dir + "/Ogar/src"};
+  let npmCmd = "npm install";
+  let npmCwd = {cwd: dir + "/Ogar"};
+
+  async.series([
+    (cb) => ensureExists(dir, cb),
+    (cb) => _executeCmd(gitCmd, gitCwd, cb),
+    (cb) => writeServerToFile(server, cb),
+    (cb) => _executeCmd(npmCmd, npmCwd, cb),
+    // todo there should be a better way to do this
+    // start then stop pm2 app so that it will exist
+    (cb) => _executeCmd(pm2StartCmd, pm2Cwd, cb),
+    (cb) => _executeCmd(pm2StopCmd, pm2Cwd, cb)
+  ]);
+  return server;
+}
+
+// Based on http://stackoverflow.com/questions/21194934/node-how-to-create-a-directory-if-doesnt-exist
+function ensureExists(path, mask, cb) {
+  if (typeof mask == 'function') { // allow the `mask` parameter to be optional
+    cb = mask;
+    mask = 0o777;
+  }
+  console.log("ensureExists  path: ", path, " mask: ", mask);
+  fs.mkdir(path, mask, function (err) {
+    if (err) {
+      if (err.code == 'EEXIST') {
+        cb(null);
+        console.log("created folder already exists");
+      } // ignore the error if the folder already exists
+      else {
+        cb(err);
+        console.log("created folder failed");
+      } // something else went wrong
+    } else {
+      console.log("created folder");
+      cb(null);
+    } // successfully created folder
+  });
+}
+
+function _executeCmd(cmd, options, cb) {
+  console.log("exec cmd: ", cmd, " options:", options);
+  exec(cmd, options, function (err, stdout, stderr) {
+    if (err) {
+      console.error("_executeCmd err: ", err, " stderr: ", stderr);
+      cb({error: err, msg: stderr});
+    }
+    console.log("_executeCmd stdout: ", stdout);
+    cb(null, stdout);
+  })
+}
