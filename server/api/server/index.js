@@ -7,7 +7,6 @@ import * as auth from '../../auth/auth.service';
 var router = express.Router();
 
 router.get('/', auth.isAuthenticated(), controller.index);
-router.get('/listall', auth.hasRole('admin'), controller.indexAll);
 router.get('/model', auth.isAuthenticated(), controller.model);
 router.get('/status', controller.status);
 router.get('/status/:id', controller.status);

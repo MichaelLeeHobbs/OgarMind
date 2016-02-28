@@ -123,10 +123,11 @@
     }
 
     getServers() {
-      let uri = (this.isAdmin) ? 'api/servers/listall' : 'api/servers';
-      this.$http.get(uri).then(response => {
-        this.servers = response.data;
-        this.servers.forEach((server) => this.injectButtons(server._id));
+      let self = this;
+      this.$http.get('api/servers').then(response => {
+        self.servers = response.data;
+        console.log(response);
+        self.servers.forEach((server) => self.injectButtons(server._id));
       }); // end $http.get('/api/servers/model').then(response => {
     }
   }

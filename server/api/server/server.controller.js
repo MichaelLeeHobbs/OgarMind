@@ -79,22 +79,16 @@ function removeEntity(res) {
 }
 
 /**
- * Get a list of all Servers
- * restriction: 'admin'
- */
-export function indexAll(req, res) {
-  Server.findAsync()
-    .then(responseWithResult(res))
-    .catch(handleError(res));
-}
-
-/**
- * Get a list Server of Servers from the DB owned by the user
+ * Get a list Server of Servers from the DB owned by the user or all if user has role admin
  * restriction: 'owner'
  */
 export function index(req, res) {
-  var userId = req.user._id;
-  Server.findAsync({ownerId: userId})
+  let query = (req.user.role == 'admin') ? {} : {ownerId: req.user._id};
+  Server.findAsync(query)
+    .then((servers)=>{
+      console.log("servers: ", servers);
+      return servers;
+    })
     .then(responseWithResult(res))
     .catch(handleError(res));
 }
